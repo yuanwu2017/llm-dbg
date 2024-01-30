@@ -101,6 +101,7 @@ print(f"output={tensors}")
 print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
 
 
+print(f"############################################# model synce test #########################################################################")
 from trl import AutoModelForCausalLMWithValueHead, AutoModelForSeq2SeqLMWithValueHead, PPOConfig, PPOTrainer, set_seed
 model = AutoModelForCausalLMWithValueHead.from_pretrained(
     "lvwerra/gpt2-imdb",
@@ -114,5 +115,8 @@ for name, param in model.named_parameters():
 
 for name, buffer in model.named_buffers():
     module_states.append(buffer.detach())
-dist._broadcast_coalesced(process_group, module_states, buffer_size=262144000, src=0)
+with torch.autograd.profiler.profile(record_shapes=True) as prof:
+    for _ in range(10):
+        dist._broadcast_coalesced(process_group, module_states, buffer_size=262144000, src=0)
+print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
 print(f"test done!")    
