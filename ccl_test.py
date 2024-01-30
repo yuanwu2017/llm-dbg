@@ -99,7 +99,7 @@ with torch.autograd.profiler.profile(record_shapes=True) as prof:
 print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
 print_rank_0(f"broadcast_coalesced test done!!!!")
 dist.barrier()
-tensors = [torch.tensor(rank, device=device),torch.tensor(-10000., device=device), torch.tensor([[True, False, True, False],[True, False, False, False]], device=device)]
+tensors = [torch.tensor([[True, False, True, False],[True, False, False, False]], device=device)]
 #tensors = [torch.tensor(rank, device=device),torch.tensor(-10000., device=device)]
 with torch.autograd.profiler.profile(record_shapes=True) as prof:
         try:
