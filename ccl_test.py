@@ -94,6 +94,7 @@ with torch.autograd.profiler.profile(record_shapes=True) as prof:
            dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
         except Exception as e:
            traceback.print_exc()
+           print(f"float value test failed!!!!!!!!!!!!!!!!")
            quit()
 print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
 print_rank_0(f"broadcast_coalesced test done!!!!")
@@ -105,6 +106,7 @@ with torch.autograd.profiler.profile(record_shapes=True) as prof:
            output = dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
         except :
            traceback.print_exc()
+           print(f"bool value test failed!!!!!!!!!!!!!!!!")
            quit()
 print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
 dist.barrier()
