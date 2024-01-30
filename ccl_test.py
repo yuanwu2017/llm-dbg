@@ -96,7 +96,7 @@ try:
     print_rank_0(f"broadcast_coalesced float test done!!!!")
 except Exception as e:
            traceback.print_exc()
-           print(f"float value test failed!!!!!!!!!!!!!!!!")
+           print_rank_0(f"float value test failed!!!!!!!!!!!!!!!!")
 dist.barrier()
 tensors = [torch.tensor([[True, False, True, False],[True, False, False, False]], device=device)]
 #tensors = [torch.tensor(rank, device=device),torch.tensor(-10000., device=device)]
@@ -104,10 +104,10 @@ try:
     with torch.autograd.profiler.profile(record_shapes=True) as prof:
             output = dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
     print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
-    print(f"bool value test done!")
+    print_rank_0(f"bool value test done!")
 except :
     traceback.print_exc()
-    print(f"bool value test failed!!!!!!!!!!!!!!!!")
+    print_rank_0(f"bool value test failed!!!!!!!!!!!!!!!!")
 
 dist.barrier()
 
