@@ -3,6 +3,7 @@ import torch.distributed as dist
 import os
 import argparse
 from typing import List
+import traceback
 def get_int_from_env(env_keys, default):
     """Returns the first positive env value found in the `env_keys` list or the default."""
     for e in env_keys:
@@ -12,9 +13,15 @@ def get_int_from_env(env_keys, default):
     return default
 
 
-
-
-print("ccl_test start")
+def print_rank_0(message):
+    """If distributed is initialized, print only on rank 0."""
+    if torch.distributed.is_initialized():
+        if torch.distributed.get_rank() == 0:
+            print(message, flush=True)
+    else:
+        print(message, flush=True)
+        
+print_rank_0("ccl_test start")
 parser = argparse.ArgumentParser()
 parser.add_argument('--device', '-dev', type=str, default='xpu', help='Device type to use: cpu, xpu')
 parser.add_argument('--launch', '-l', type=str, default='torch', help='launcher type to use: torch, mpi')
@@ -58,12 +65,12 @@ else:
 
 
 
-print("ccl_test init_process_group device={device}, backend={backend}")
+print_rank_0("ccl_test init_process_group device={device}, backend={backend}")
 group = dist.init_process_group(backend, rank=rank, world_size=size)
-print("ccl_test init_process_group done")
+print_rank_0("ccl_test init_process_group done")
 my_rank = dist.get_rank()
 my_size = dist.get_world_size()
-print("my rank = %d  my size = %d" % (my_rank, my_size))
+print_rank_0("my rank = %d  my size = %d" % (my_rank, my_size))
 x = torch.ones([2, 2], device=device)
 y = torch.ones([4, 4], device=device)
 
@@ -73,11 +80,11 @@ with torch.autograd.profiler.profile(record_shapes=True) as prof:
         dist.all_reduce(y)
         dist.broadcast(x, src=0)
         dist.broadcast(y, src=0)
-print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+print_rank_0(f"broadcast and reduce test done!!!!")
 
 dist.barrier()
 
-print(f"broadcast and reduce test done!!!!")
 target = torch.arange(60, dtype=torch.float16, device=device).chunk(5)
 target += torch.arange(60, dtype=torch.float32, device=device).chunk(5)
 tensors = [tensor.clone() for tensor in target]
@@ -86,23 +93,24 @@ with torch.autograd.profiler.profile(record_shapes=True) as prof:
         try:
            dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
         except Exception as e:
-           print(f"exception={e}")
-print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+           traceback.print_exc()
+           quit()
+print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+print_rank_0(f"broadcast_coalesced test done!!!!")
 dist.barrier()
-print(f"broadcast_coalesced test done!!!!")
 tensors = [torch.tensor(rank, device=device),torch.tensor(-10000., device=device), torch.tensor([[True, False, True, False],[True, False, False, False]], device=device)]
 #tensors = [torch.tensor(rank, device=device),torch.tensor(-10000., device=device)]
 with torch.autograd.profiler.profile(record_shapes=True) as prof:
         try:
            output = dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
-        except Exception as e:
-           print(f"exception={e}")
-print(f"output={tensors}")
-print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
-
-
+        except :
+           traceback.print_exc()
+           quit()
+print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
 dist.barrier()
-print(f"############################################# model synce test #########################################################################")
+print_rank_0(f"broadcast_coalesced bool value test done!!!!")
+
+print_rank_0(f"############################################# model synce test #########################################################################")
 from trl import AutoModelForCausalLMWithValueHead, AutoModelForSeq2SeqLMWithValueHead, PPOConfig, PPOTrainer, set_seed
 model = AutoModelForCausalLMWithValueHead.from_pretrained(
     "lvwerra/gpt2-imdb",
@@ -119,5 +127,5 @@ for name, buffer in model.named_buffers():
 with torch.autograd.profiler.profile(record_shapes=True) as prof:
     for _ in range(10):
         dist._broadcast_coalesced(process_group, module_states, buffer_size=262144000, src=0)
-print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
-print(f"test done!")    
+print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+print_rank_0(f"test done!")    
