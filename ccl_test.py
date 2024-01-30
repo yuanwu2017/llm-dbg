@@ -77,8 +77,8 @@ print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_
 
 dist.barrier()
 
-target = torch.arange(60, dtype=torch.float16).chunk(5)
-target += torch.arange(60, dtype=torch.float32).chunk(5)
+target = torch.arange(60, dtype=torch.float16, device=device).chunk(5)
+target += torch.arange(60, dtype=torch.float32, device=device).chunk(5)
 tensors = [tensor.clone() for tensor in target]
 process_group = dist.distributed_c10d._get_default_group()
 with torch.autograd.profiler.profile(record_shapes=True) as prof:
