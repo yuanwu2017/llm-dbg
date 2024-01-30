@@ -1,6 +1,4 @@
 import torch
-import intel_extension_for_pytorch
-import oneccl_bindings_for_pytorch
 import torch.distributed as dist
 import os
 import argparse
@@ -43,6 +41,8 @@ if args.launch =='torch' :
     
 
 if args.device == 'xpu':
+    import intel_extension_for_pytorch
+    import oneccl_bindings_for_pytorch
     device = f"xpu:{local_rank}"
     backend='ccl'
     torch.xpu.set_device(local_rank)
@@ -51,6 +51,8 @@ elif args.device=='cuda':
     torch.cuda.set_device(local_rank)
     backend='nccl'
 else:
+    import intel_extension_for_pytorch
+    import oneccl_bindings_for_pytorch
     device = 'cpu'
     backend='ccl'
 
@@ -75,12 +77,13 @@ print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_
 
 dist.barrier()
 
-# target = torch.arange(60, dtype=torch.float16).chunk(5)
-# target += torch.arange(60, dtype=torch.float32).chunk(5)
-# tensors = [tensor.clone() for tensor in target]
-# with torch.autograd.profiler.profile(record_shapes=True) as prof:
-#         try:
-#            dist._broadcast_coalesced(group, tensors, 256, 0)
-#         except Exception as e:
-#            print(f"exception={e}")
-# print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+target = torch.arange(60, dtype=torch.float16).chunk(5)
+target += torch.arange(60, dtype=torch.float32).chunk(5)
+tensors = [tensor.clone() for tensor in target]
+process_group = dist.distributed_c10d._get_default_group()
+with torch.autograd.profiler.profile(record_shapes=True) as prof:
+        try:
+           dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
+        except Exception as e:
+           print(f"exception={e}")
+print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
