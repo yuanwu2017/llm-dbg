@@ -77,6 +77,7 @@ print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_
 
 dist.barrier()
 
+print(f"broadcast and reduce test done!!!!")
 target = torch.arange(60, dtype=torch.float16, device=device).chunk(5)
 target += torch.arange(60, dtype=torch.float32, device=device).chunk(5)
 tensors = [tensor.clone() for tensor in target]
@@ -86,4 +87,15 @@ with torch.autograd.profiler.profile(record_shapes=True) as prof:
            dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
         except Exception as e:
            print(f"exception={e}")
+print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+dist.barrier()
+print(f"broadcast_coalesced test done!!!!")
+tensors = [torch.tensor(rank, device=device),torch.tensor(-10000., device=device), torch.tensor([[True, False, True, False],[True, False, False, False]], device=device)]
+#tensors = [torch.tensor(rank, device=device),torch.tensor(-10000., device=device)]
+with torch.autograd.profiler.profile(record_shapes=True) as prof:
+        try:
+           output = dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
+        except Exception as e:
+           print(f"exception={e}")
+print(f"output={tensors}")
 print(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
