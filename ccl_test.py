@@ -89,28 +89,27 @@ target = torch.arange(60, dtype=torch.float16, device=device).chunk(5)
 target += torch.arange(60, dtype=torch.float32, device=device).chunk(5)
 tensors = [tensor.clone() for tensor in target]
 process_group = dist.distributed_c10d._get_default_group()
-with torch.autograd.profiler.profile(record_shapes=True) as prof:
-        try:
-           dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
-        except Exception as e:
+try:
+    with torch.autograd.profiler.profile(record_shapes=True) as prof:
+        dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
+    print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+    print_rank_0(f"broadcast_coalesced float test done!!!!")
+except Exception as e:
            traceback.print_exc()
            print(f"float value test failed!!!!!!!!!!!!!!!!")
-           quit()
-print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
-print_rank_0(f"broadcast_coalesced test done!!!!")
 dist.barrier()
 tensors = [torch.tensor([[True, False, True, False],[True, False, False, False]], device=device)]
 #tensors = [torch.tensor(rank, device=device),torch.tensor(-10000., device=device)]
-with torch.autograd.profiler.profile(record_shapes=True) as prof:
-        try:
-           output = dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
-        except :
-           traceback.print_exc()
-           print(f"bool value test failed!!!!!!!!!!!!!!!!")
-           quit()
-print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+try:
+    with torch.autograd.profiler.profile(record_shapes=True) as prof:
+            output = dist._broadcast_coalesced(process_group, tensors, buffer_size=256, src=0)
+    print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+    print(f"bool value test done!")
+except :
+    traceback.print_exc()
+    print(f"bool value test failed!!!!!!!!!!!!!!!!")
+
 dist.barrier()
-print_rank_0(f"broadcast_coalesced bool value test done!!!!")
 
 print_rank_0(f"############################################# model synce test #########################################################################")
 from trl import AutoModelForCausalLMWithValueHead, AutoModelForSeq2SeqLMWithValueHead, PPOConfig, PPOTrainer, set_seed
@@ -126,8 +125,12 @@ for name, param in model.named_parameters():
 
 for name, buffer in model.named_buffers():
     module_states.append(buffer.detach())
-with torch.autograd.profiler.profile(record_shapes=True) as prof:
-    for _ in range(10):
-        dist._broadcast_coalesced(process_group, module_states, buffer_size=262144000, src=0)
-print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
-print_rank_0(f"test done!")    
+try:
+    with torch.autograd.profiler.profile(record_shapes=True) as prof:
+        for _ in range(10):
+            dist._broadcast_coalesced(process_group, module_states, buffer_size=262144000, src=0)
+    print_rank_0(prof.key_averages(group_by_input_shape=True).table(sort_by="self_cpu_time_total"))
+    print_rank_0(f"model sync test done!")    
+except :
+    traceback.print_exc()
+    print_rank_0(f"model sync test failed!")    
