@@ -8,9 +8,7 @@ import pandas as pd
 import numpy as np
 import random
 API_REQUEST = "generate"
-#API_ENDPOINT = os.getenv("API_ENDPOINT", "http://localhost:8000")
-#os.environ['NO_PROXY'] = 'localhost'
-
+API_STREAM_REQUEST = ""
 
 #queries_file = 'test_set_queries.tsv'
 queries_file = 'default.txt'
@@ -39,10 +37,11 @@ def query(query, idx=0, config=None, queries=None) :
     Send a query to the REST API and parse the answer.
     Returns both a ready-to-use representation of the results and the raw JSON.
     """
-    if config.stream is True :
-        API_REQUEST = ""
-    url = f"http://{config.ip_address}:{config.port}/{API_REQUEST}"
-    print(f"url={url}")
+    api_path = API_REQUEST
+    if config.stream is True:
+        api_path = API_STREAM_REQUEST
+    url = f"http://{config.ip_address}:{config.port}/{api_path}"
+    print(url)
     ret = 1
     pid = str(os.getpid()) + "_" + str(idx)
     rad_max_new_tokens = random.randint(1, config.max_new_tokens)
@@ -64,7 +63,6 @@ def query(query, idx=0, config=None, queries=None) :
     print(f"req={req}")
     start = time.time()
     response_raw = requests.post(url, json=req, stream=config.stream)
-    print("1111111111")
     report = []
     token_num = 0
     first_token_time = None
@@ -97,7 +95,6 @@ def query(query, idx=0, config=None, queries=None) :
     return interval, ret, err_query, first_token_time, second_token_time
 
 def benchmark(conig, query_idx, queries):
-    print(f"Performance benchmark ! Use the default question")
     question="What is Deep Learning?"
     interval, ret, err_query, first, second = query(question, query_idx, config, queries)
     return interval, ret, err_query, first, second
@@ -114,7 +111,7 @@ def parse_cmd():
     args.add_argument('--do_sample', type=bool, default=False, dest='do_sample', help='do_sample')
     args.add_argument('--stream', type=bool, default=False, dest='stream', help='query the stream interface of tgi')
     args.add_argument('--temperature', type=float, default=None, dest='temperature', help='generation parameters')
-    args.add_argument('--repetition_penalty', type=float, default=1.03, dest='repetition_penalty', help='generation parameters')
+    args.add_argument('--repetition_penalty', type=float, default=None, dest='repetition_penalty', help='generation parameters')
     args.add_argument('--top_k', type=int, default=None, dest='top_k', help='generation parameters')
     args.add_argument('--top_p', type=float, default=None, dest='top_p', help='generation parameters')
     args.add_argument('--typical_p', type=float, default=None, dest='typical_p', help='generation parameters')
