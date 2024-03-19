@@ -12,6 +12,8 @@ device = f"{args.device}:0"
 set_seed(42)
 
 for src_type in [torch.float, torch.float16]:
+    weights = torch.tensor([0, 10, 3, 0], dtype=src_type, device=device) # create a tensor of weights
+
     a_float = torch.rand((4, 4), dtype=src_type, device=device)
     print(f"a_float = {a_float}")
     b_float = torch.rand((4, 4), dtype=src_type, device=device)
@@ -39,7 +41,11 @@ for src_type in [torch.float, torch.float16]:
                 print(f"is_xpu_autocast_enabled={torch.xpu.is_autocast_enabled()}")
             print(f"is_autocast_enabled={torch.is_autocast_enabled()}")
             print(f"get_autocast_dtype={torch.get_autocast_gpu_dtype()}")
-
+            out = torch.multinomial(weights, 2)
+            print(f"out={out}")
+            #torch.multinomial(weights, 4) # ERROR!
+            out2 = torch.multinomial(weights, 4, replacement=True)
+            print(f"out={out2}")
 
 # After exiting autocast, calls f_float.float() to use with d_float32
 print(f"d_float type = {d_float.dtype}")
