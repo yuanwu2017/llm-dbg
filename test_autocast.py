@@ -22,7 +22,10 @@ for src_type in [torch.float, torch.float16]:
     print(f"c_float = {c_float}")
     d_float = torch.rand((4, 4), dtype=src_type, device=device) 
     print(f"d_float = {d_float}")
+    x_cat = torch.load('tensor.pt')
+    #print(f"x={x_cat}")
     for dst_type in [torch.bfloat16, torch.float16] :
+        print(f"#################{src_type}>>>>>>>>>{dst_type}################")
         with torch.autocast(device_type=args.device, dtype=dst_type):
             # torch.mm is on autocast's list of ops that should run in float16.
             # Inputs are float32, but the op runs in float16 and produces float16 output.
@@ -46,6 +49,18 @@ for src_type in [torch.float, torch.float16]:
             #torch.multinomial(weights, 4) # ERROR!
             out2 = torch.multinomial(weights, 4, replacement=True)
             print(f"out={out2}")
+            # d1 =  d_float[..., : d_float.shape[-1] // 2]
+            # print(f"d1={d1}")
+            # d2 = d_float[..., d_float.shape[-1] // 2 :]
+            # print(f"d2={d2}")
+            # d_cat = torch.cat((-d2, d1), dim=-1)
+            # print(f"d_cat={d_cat}")
+            x1 = x_cat[..., : x_cat.shape[-1] // 2]
+            #print(f"x1={x1}")
+            x2 = x_cat[..., x_cat.shape[-1] // 2 :]
+            #print(f"x2={x2}")
+            torch.cat((-x2, x1), dim=-1)
+
 
 # After exiting autocast, calls f_float.float() to use with d_float32
 print(f"d_float type = {d_float.dtype}")
