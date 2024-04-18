@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import random
 API_REQUEST = "generate"
+TEI_API_REQUEST = "embed"
 API_STREAM_REQUEST = ""
 
 #queries_file = 'test_set_queries.tsv'
@@ -37,7 +38,7 @@ def query(query, idx=0, config=None, queries=None) :
     Send a query to the REST API and parse the answer.
     Returns both a ready-to-use representation of the results and the raw JSON.
     """
-    api_path = API_REQUEST
+    api_path = API_REQUEST if config.workload == "tgi" else TEI_API_REQUEST
     if config.stream is True:
         api_path = API_STREAM_REQUEST
     url = f"http://{config.ip_address}:{config.port}/{api_path}"
@@ -48,17 +49,19 @@ def query(query, idx=0, config=None, queries=None) :
     queries_len = len(queries)
     query_id = random.randint(0, queries_len-1)
     query_txt = list(queries.values())[query_id]
-    params = {"max_new_tokens": rad_max_new_tokens, "do_sample": config.do_sample, "seed" : config.seed}
-    if config.temperature is not None:
-        params.update({"temperature":config.temperature}) 
-    if config.top_k is not None:
-        params.update({"top_k":config.top_k}) 
-    if config.top_p is not None:
-        params.update({"top_p":config.top_p}) 
-    if config.repetition_penalty is not None:
-        params.update({"repetition_penalty":config.repetition_penalty}) 
-    if config.typical_p is not None:
-        params.update({"typical_p":config.typical_p}) 
+    params = {}
+    if config.workload == "tgi" :
+        params = {"max_new_tokens": rad_max_new_tokens, "do_sample": config.do_sample, "seed" : config.seed}
+        if config.temperature is not None:
+            params.update({"temperature":config.temperature}) 
+        if config.top_k is not None:
+            params.update({"top_k":config.top_k}) 
+        if config.top_p is not None:
+            params.update({"top_p":config.top_p}) 
+        if config.repetition_penalty is not None:
+            params.update({"repetition_penalty":config.repetition_penalty}) 
+        if config.typical_p is not None:
+            params.update({"typical_p":config.typical_p}) 
     req = {"inputs": query_txt, "parameters": params}
     print(f"req={req}")
     start = time.time()
@@ -117,6 +120,7 @@ def parse_cmd():
     args.add_argument('--typical_p', type=float, default=None, dest='typical_p', help='generation parameters')
     args.add_argument('--max_new_tokens', type=int, default=128, dest='max_new_tokens', help='max_new_tokens')
     args.add_argument('--dump_file', type=str, default=None, dest='dump_file', help='dump_file')
+    args.add_argument('--workload', type=str, default="tgi", dest='workload', help='Which workload? tgi or tei')
     return args.parse_args()
 
 
