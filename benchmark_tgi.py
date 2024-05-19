@@ -80,7 +80,7 @@ def query(query, idx=0, config=None, queries=None) :
             result = "".join(report).strip()
             token_num = token_num + 1
     interval=time.time() - start
-    print(f"{{pid: {pid}}}, {{time: {interval}}}, query_txt: {query_txt}, params:{params}")
+    print(f"{{pid: {pid}}}, {{time: {interval}}}, query_txt: {query_txt}, params:{params}, result:{response_raw.json()}")
     if response_raw.status_code >= 400 and response_raw.status_code != 503:
         ret = 0
         print(f"Error happend! err_num ={response_raw.status_code}, pid={pid}")
