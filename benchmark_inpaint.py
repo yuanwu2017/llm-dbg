@@ -28,8 +28,7 @@ def main():
 
     args = parser.parse_args()
     prompts = [
-        "a black cat with glowing eyes, cute, adorable, disney, pixar, highly detailed, 8k",
-        "concept art digital painting of an elven castle, inspired by lord of the rings, highly detailed, 8k",
+        "concept art digital painting of an elven castle, inspired by lord of the rings, highly detailed, 8k"
     ]
     num_images_per_prompt = 10
     num_inference_steps = 10
@@ -70,7 +69,7 @@ def main():
                 num_images_per_prompt=num_images_per_prompt,
                 throughput_warmup_steps=3,
                 num_inference_steps = num_inference_steps,
-                batch_size=4
+                batch_size = 10
             )
         start = time.time()    
         for i in range(run_num):
@@ -81,7 +80,7 @@ def main():
                 num_images_per_prompt=num_images_per_prompt,
                 throughput_warmup_steps=0,
                 num_inference_steps = num_inference_steps,
-                batch_size=4
+                batch_szie = 10
             )
         end = time.time()
         samples = num_images_per_prompt * len(prompts) * run_num
