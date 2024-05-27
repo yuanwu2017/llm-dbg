@@ -110,7 +110,7 @@ def parse_cmd():
     args.add_argument('-c', type=int, default=0, dest='real_concurrent', help='Use the real concurrent', choices=[0, 1])
     args.add_argument('--seed', type=int, default=42, dest='seed', help='random seed')
     args.add_argument('--ip', type=str, default='localhost', dest='ip_address', help='Ip address of backend server')
-    args.add_argument('--port', type=int, default=8080, dest='port', help='Ip port of backend server')
+    args.add_argument('--port', type=int, default=8089, dest='port', help='Ip port of backend server')
     args.add_argument('--do_sample', type=bool, default=False, dest='do_sample', help='do_sample')
     args.add_argument('--stream', type=bool, default=False, dest='stream', help='query the stream interface of tgi')
     args.add_argument('--temperature', type=float, default=None, dest='temperature', help='generation parameters')
