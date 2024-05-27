@@ -29,6 +29,7 @@ args = parser.parse_args()
 def get_inputs(device, output_type = "np", generator_device="cuda", dtype=torch.float, seed=0):
     if device == "hpu":
         device = "cpu"
+        dtype = torch.bfloat16
     generator = torch.Generator(device=device).manual_seed(seed)
         
     latents = np.random.RandomState(seed).standard_normal((2, 4, 64, 64))
@@ -62,6 +63,7 @@ def test_stable_diffusion_ddim():
     else:
         sd_pipe = StableDiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", safety_checker=None)
         sd_pipe.scheduler = DDIMScheduler.from_config(sd_pipe.scheduler.config)
+        sd_pipe.to(args.device)
     
     sd_pipe.set_progress_bar_config(disable=None)
     for output_type in ["np", "latent", "pil", "pt"] :
