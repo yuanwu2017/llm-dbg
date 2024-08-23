@@ -18,7 +18,7 @@ queries_file = 'default.txt'
 
 def load_queries(filename, task):
     queries = {}
-    if task is "text": 
+    if task == "text": 
         qid = 0
         with open(filename) as fp:
             for q in fp.readlines():
@@ -77,7 +77,7 @@ def query(query, idx=0, config=None, queries=None) :
     start = time.time()
     first_token_time = None
     second_token_time = None
-    if config.task is "text":
+    if config.task == "text":
         print(f"req={req}")
         response_raw = requests.post(url, json=req, stream=config.stream)
 
