@@ -1,1 +1,1 @@
-python3 benchmark_tgi.py -p 8 -n 64 -c 0 --do_sample True
+python3 benchmark_tgi.py -p 32 -n 3200 -c 0  --port 8083

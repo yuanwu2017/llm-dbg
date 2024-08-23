@@ -1,1 +1,1 @@
-python3 benchmark_tgi.py -p 1 -n 1 -c 0 --workload tei --port 8080
+python3 benchmark_tgi.py -p 3 -n 20 -c 0 --workload tei --port 8083

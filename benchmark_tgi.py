@@ -7,6 +7,8 @@ import argparse, time, os
 import pandas as pd
 import numpy as np
 import random
+import base64
+from huggingface_hub import InferenceClient
 API_REQUEST = "generate"
 TEI_API_REQUEST = "embed"
 API_STREAM_REQUEST = ""
@@ -14,16 +16,26 @@ API_STREAM_REQUEST = ""
 #queries_file = 'test_set_queries.tsv'
 queries_file = 'default.txt'
 
-def load_queries(filename):
+def load_queries(filename, task):
     queries = {}
-    qid = 0
-    with open(filename) as fp:
-        for q in fp.readlines():
-            #qid, query_text = q.strip().split("\t")
-            #query_text = query_text.strip()
-            query_text = q.strip()
-            queries[int(qid)] = query_text
-            qid = qid+1
+    if task is "text": 
+        qid = 0
+        with open(filename) as fp:
+            for q in fp.readlines():
+                #qid, query_text = q.strip().split("\t")
+                #query_text = query_text.strip()
+                query_text = q.strip()
+                queries[int(qid)] = query_text
+                qid = qid+1
+    else: 
+        image_path = "rabbit.png"
+        with open(image_path, "rb") as f:
+            image = base64.b64encode(f.read()).decode("utf-8")
+
+        image = f"data:image/png;base64,{image}"
+        prompt = f"![]({image})What is this a picture of?\n\n"
+        queries[0] = prompt
+        
     return queries
 
 
@@ -42,7 +54,6 @@ def query(query, idx=0, config=None, queries=None) :
     if config.stream is True:
         api_path = API_STREAM_REQUEST
     url = f"http://{config.ip_address}:{config.port}/{api_path}"
-    print(url)
     ret = 1
     pid = str(os.getpid()) + "_" + str(idx)
     rad_max_new_tokens = random.randint(1, config.max_new_tokens)
@@ -63,29 +74,37 @@ def query(query, idx=0, config=None, queries=None) :
         if config.typical_p is not None:
             params.update({"typical_p":config.typical_p}) 
     req = {"inputs": query_txt, "parameters": params}
-    print(f"req={req}")
     start = time.time()
-    response_raw = requests.post(url, json=req, stream=config.stream)
-    report = []
-    token_num = 0
     first_token_time = None
     second_token_time = None
-    if config.stream is True:
-        for resp in response_raw.iter_content():
-            report.append(resp.decode('utf-8'))
-            if token_num == 0:
-                first_token_time =  time.time()-start
-            if token_num == 1:
-                second_token_time = time.time() - start - first_token_time
-            result = "".join(report).strip()
-            token_num = token_num + 1
-    interval=time.time() - start
-    print(f"{{pid: {pid}}}, {{time: {interval}}}, query_txt: {query_txt}, params:{params}, result:{response_raw.json()}")
-    if response_raw.status_code >= 400 and response_raw.status_code != 503:
-        ret = 0
-        print(f"Error happend! err_num ={response_raw.status_code}, pid={pid}")
-        raise Exception(f"{vars(response_raw)}")
-        
+    if config.task is "text":
+        print(f"req={req}")
+        response_raw = requests.post(url, json=req, stream=config.stream)
+
+        report = []
+        token_num = 0
+
+        if config.stream is True:
+            for resp in response_raw.iter_content():
+                report.append(resp.decode('utf-8'))
+                if token_num == 0:
+                    first_token_time =  time.time()-start
+                if token_num == 1:
+                    second_token_time = time.time() - start - first_token_time
+                result = "".join(report).strip()
+                token_num = token_num + 1
+        interval=time.time() - start
+        print(f"{{pid: {pid}}}, {{time: {interval}}}, query_txt: {query_txt}, params:{params}, result:{response_raw.json()}")
+        if response_raw.status_code >= 400 and response_raw.status_code != 503:
+            ret = 0
+            print(f"Error happend! err_num ={response_raw.status_code}, pid={pid}")
+            raise Exception(f"{vars(response_raw)}")
+    else:
+        client = InferenceClient(f"http://{config.ip_address}:{config.port}")
+        result = client.text_generation(query_txt, max_new_tokens=rad_max_new_tokens, stream=False)
+        interval=time.time() - start
+        print(f"{{pid: {pid}}}, {{time: {interval}}}, max_new_tokens:{rad_max_new_tokens}, result:{result}")       
+       
     #response = response_raw.json()
     # if "errors" in response:
     #     ret = 0
@@ -121,6 +140,7 @@ def parse_cmd():
     args.add_argument('--max_new_tokens', type=int, default=128, dest='max_new_tokens', help='max_new_tokens')
     args.add_argument('--dump_file', type=str, default=None, dest='dump_file', help='dump_file')
     args.add_argument('--workload', type=str, default="tgi", dest='workload', help='Which workload? tgi or tei')
+    args.add_argument('--task', type=str, default="text", dest='task', help='Which inference task? text or image')
     return args.parse_args()
 
 
@@ -130,7 +150,7 @@ if __name__ == '__main__':
     random.seed(config.seed)
     result = pd.DataFrame()
     start = time.time()
-    queries= load_queries(queries_file)
+    queries= load_queries(queries_file, config.task)
     if config.real_concurrent == 0 :
         with Pool(processes=config.processes) as pool:
 
