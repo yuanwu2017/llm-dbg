@@ -79,8 +79,8 @@ def query(query, idx=0, config=None, queries=None) :
     second_token_time = None
     if config.task == "text":
         print(f"req={req}")
+        print(f"url={url}")
         response_raw = requests.post(url, json=req, stream=config.stream)
-
         report = []
         token_num = 0
 
@@ -103,7 +103,7 @@ def query(query, idx=0, config=None, queries=None) :
         client = InferenceClient(f"http://{config.ip_address}:{config.port}")
         result = client.text_generation(query_txt, max_new_tokens=rad_max_new_tokens, stream=False)
         interval=time.time() - start
-        print(f"{{pid: {pid}}}, {{time: {interval}}}, max_new_tokens:{rad_max_new_tokens}, result:{result}")       
+        print(f"{{pid: {pid}}}, {{time: {interval}}}, max_new_tokens:{rad_max_new_tokens}, result:{result}, Done!!!!!")       
        
     #response = response_raw.json()
     # if "errors" in response:
