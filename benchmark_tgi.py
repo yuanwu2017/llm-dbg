@@ -62,7 +62,7 @@ def query(query, idx=0, config=None, queries=None) :
     query_txt = list(queries.values())[query_id]
     params = {}
     if config.workload == "tgi" :
-        params = {"max_new_tokens": rad_max_new_tokens, "do_sample": config.do_sample, "seed" : config.seed}
+        params = {"max_new_tokens": config.max_new_tokens, "do_sample": config.do_sample, "seed" : config.seed}
         if config.temperature is not None:
             params.update({"temperature":config.temperature}) 
         if config.top_k is not None:
@@ -137,7 +137,7 @@ def parse_cmd():
     args.add_argument('--top_k', type=int, default=None, dest='top_k', help='generation parameters')
     args.add_argument('--top_p', type=float, default=None, dest='top_p', help='generation parameters')
     args.add_argument('--typical_p', type=float, default=None, dest='typical_p', help='generation parameters')
-    args.add_argument('--max_new_tokens', type=int, default=128, dest='max_new_tokens', help='max_new_tokens')
+    args.add_argument('--max_new_tokens', type=int, default=1024, dest='max_new_tokens', help='max_new_tokens')
     args.add_argument('--dump_file', type=str, default=None, dest='dump_file', help='dump_file')
     args.add_argument('--workload', type=str, default="tgi", dest='workload', help='Which workload? tgi or tei')
     args.add_argument('--task', type=str, default="text", dest='task', help='Which inference task? text or image')
