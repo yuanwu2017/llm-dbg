@@ -11,7 +11,7 @@ import base64
 from huggingface_hub import InferenceClient
 API_REQUEST = "generate"
 TEI_API_REQUEST = "embed"
-API_STREAM_REQUEST = ""
+API_STREAM_REQUEST = "generate_stream"
 
 #queries_file = 'test_set_queries.tsv'
 queries_file = 'default.txt'
@@ -28,11 +28,12 @@ def load_queries(filename, task):
                 queries[int(qid)] = query_text
                 qid = qid+1
     else: 
-        image_path = "rabbit.png"
+        #image_path = "llava_v1_5_radar.jpg"
+        image_path = "view.jpg"
+        #image_path = "australia.jpg"
         with open(image_path, "rb") as f:
             image = base64.b64encode(f.read()).decode("utf-8")
-
-        image = f"data:image/png;base64,{image}"
+        image = f"data:image/jpeg;base64,{image}"
         prompt = f"![]({image})What is this a picture of?\n\n"
         queries[0] = prompt
         
@@ -101,9 +102,31 @@ def query(query, idx=0, config=None, queries=None) :
             raise Exception(f"{vars(response_raw)}")
     else:
         client = InferenceClient(f"http://{config.ip_address}:{config.port}")
-        result = client.text_generation(query_txt, max_new_tokens=rad_max_new_tokens, stream=False)
+        #image_path = "view.jpg"
+        #image_path = "australia.jpg"
+        # with open(image_path, "rb") as f:
+        #     image_url = base64.b64encode(f.read()).decode("utf-8")
+        # result = client.chat.completions.create(
+        #     messages=[
+        #         {
+        #             "role": "user",
+        #             "content": [
+        #                 {
+        #                     "type": "image_url",
+        #                     "image_url": {"url": image_url},
+        #                 },
+        #                 {
+        #                     "type": "text",
+        #                     "text": "Describe this image in one sentence.",
+        #                 },
+        #             ],
+        #         },
+        #     ],
+        # )
+
+        result = client.text_generation(query_txt, max_new_tokens=config.max_new_tokens, stream=False, seed=43)
         interval=time.time() - start
-        print(f"{{pid: {pid}}}, {{time: {interval}}}, max_new_tokens:{rad_max_new_tokens}, result:{result}, Done!!!!!")       
+        print(f"{{pid: {pid}}}, {{time: {interval}}}, max_new_tokens:{config.max_new_tokens}, result:{result}, Done!!!!!")       
        
     #response = response_raw.json()
     # if "errors" in response:
@@ -131,13 +154,13 @@ def parse_cmd():
     args.add_argument('--ip', type=str, default='localhost', dest='ip_address', help='Ip address of backend server')
     args.add_argument('--port', type=int, default=8089, dest='port', help='Ip port of backend server')
     args.add_argument('--do_sample', type=bool, default=False, dest='do_sample', help='do_sample')
-    args.add_argument('--stream', type=bool, default=False, dest='stream', help='query the stream interface of tgi')
+    args.add_argument('--stream', type=bool, default=True, dest='stream', help='query the stream interface of tgi')
     args.add_argument('--temperature', type=float, default=None, dest='temperature', help='generation parameters')
     args.add_argument('--repetition_penalty', type=float, default=None, dest='repetition_penalty', help='generation parameters')
     args.add_argument('--top_k', type=int, default=None, dest='top_k', help='generation parameters')
     args.add_argument('--top_p', type=float, default=None, dest='top_p', help='generation parameters')
     args.add_argument('--typical_p', type=float, default=None, dest='typical_p', help='generation parameters')
-    args.add_argument('--max_new_tokens', type=int, default=1024, dest='max_new_tokens', help='max_new_tokens')
+    args.add_argument('--max_new_tokens', type=int, default=128, dest='max_new_tokens', help='max_new_tokens')
     args.add_argument('--dump_file', type=str, default=None, dest='dump_file', help='dump_file')
     args.add_argument('--workload', type=str, default="tgi", dest='workload', help='Which workload? tgi or tei')
     args.add_argument('--task', type=str, default="text", dest='task', help='Which inference task? text or image')
