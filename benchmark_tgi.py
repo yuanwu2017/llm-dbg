@@ -27,14 +27,26 @@ def load_queries(filename, task):
                 query_text = q.strip()
                 queries[int(qid)] = query_text
                 qid = qid+1
-    else: 
-        #image_path = "llava_v1_5_radar.jpg"
-        image_path = "view.jpg"
+    else:
+        url1 = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/0052a70beed5bf71b92610a43a52df6d286cd5f3/diffusers/rabbit.jpg"
+        
+        image_path = "rabbit.jpg"
+        #image_path = "view.jpg"
         #image_path = "australia.jpg"
         with open(image_path, "rb") as f:
             image = base64.b64encode(f.read()).decode("utf-8")
-        image = f"data:image/jpeg;base64,{image}"
-        prompt = f"![]({image})What is this a picture of?\n\n"
+        image = f"data:image/jpg;base64,{image}"
+        # messages = [
+        #     {
+        #         "role": "user",
+        #         "content": [
+        #             {"type": "text", "text": "Can you describe the image ?"},
+        #             {"type": "image_url", "image_url": image},
+        #         ]
+        #     },
+        # ]
+
+        prompt = f"![]({image})Can you describe the image ?\n\n"
         queries[0] = prompt
         
     return queries
@@ -125,6 +137,7 @@ def query(query, idx=0, config=None, queries=None) :
         # )
 
         result = client.text_generation(query_txt, max_new_tokens=config.max_new_tokens, stream=False, seed=43)
+        #output = client.chat.completions.create(messages=query_txt)
         interval=time.time() - start
         print(f"{{pid: {pid}}}, {{time: {interval}}}, max_new_tokens:{config.max_new_tokens}, result:{result}, Done!!!!!")       
        
@@ -160,7 +173,7 @@ def parse_cmd():
     args.add_argument('--top_k', type=int, default=None, dest='top_k', help='generation parameters')
     args.add_argument('--top_p', type=float, default=None, dest='top_p', help='generation parameters')
     args.add_argument('--typical_p', type=float, default=None, dest='typical_p', help='generation parameters')
-    args.add_argument('--max_new_tokens', type=int, default=3, dest='max_new_tokens', help='max_new_tokens')
+    args.add_argument('--max_new_tokens', type=int, default=128, dest='max_new_tokens', help='max_new_tokens')
     args.add_argument('--dump_file', type=str, default=None, dest='dump_file', help='dump_file')
     args.add_argument('--workload', type=str, default="tgi", dest='workload', help='Which workload? tgi or tei')
     args.add_argument('--task', type=str, default="text", dest='task', help='Which inference task? text or image')
