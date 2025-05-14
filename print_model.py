@@ -5,6 +5,7 @@ import sys
 from transformers import AutoModel, AutoConfig, AutoModelForCausalLM
 import numpy as np
 import psutil
+from collections import defaultdict
 
 def get_size_str(num_bytes):
     """Convert bytes to human readable format"""
@@ -26,8 +27,18 @@ def count_parameters(model):
         "total_size": get_size_str(total_params * 4)  # Assuming float32
     }
 
+def extract_layer_number(name):
+    """Extract layer number from parameter name"""
+    if 'layers.' in name:
+        parts = name.split('layers.')
+        if len(parts) > 1:
+            layer_part = parts[1].split('.')[0]
+            if layer_part.isdigit():
+                return int(layer_part)
+    return None
+
 def print_model_structure(model, config):
-    """Print model structure and parameters details"""
+    """Print model structure and parameters details with layer deduplication"""
     print("\n===== MODEL STRUCTURE =====")
     print(model)
     
@@ -37,18 +48,69 @@ def print_model_structure(model, config):
             print(f"{key}: {value}")
     
     print("\n===== MODULE PARAMETERS INFORMATION =====")
+    
+    # Organize modules by layer
+    layer_modules = defaultdict(list)
+    non_layer_modules = []
+    
     for name, module in model.named_modules():
         if len(list(module.children())) == 0:  # Leaf module
-            has_weight = hasattr(module, 'weight') and module.weight is not None
-            has_bias = hasattr(module, 'bias') and module.bias is not None
+            layer_num = extract_layer_number(name)
+            if layer_num is not None:
+                layer_modules[layer_num].append((name, module))
+            else:
+                non_layer_modules.append((name, module))
+    
+    # Process non-layer modules
+    for name, module in non_layer_modules:
+        has_weight = hasattr(module, 'weight') and module.weight is not None
+        has_bias = hasattr(module, 'bias') and module.bias is not None
+        
+        weight_shape = module.weight.shape if has_weight else None
+        bias_shape = module.bias.shape if has_bias else None
+        
+        print(f"\nModule: {name}")
+        print(f"  Type: {module.__class__.__name__}")
+        print(f"  Has weights: {has_weight}, Shape: {weight_shape}")
+        print(f"  Has bias: {has_bias}, Shape: {bias_shape}")
+    
+    # Check if we have layers
+    if layer_modules:
+        # Get the shapes of parameters in each layer
+        layer_signatures = {}
+        for layer_num, modules in layer_modules.items():
+            signature = []
+            for name, module in modules:
+                if hasattr(module, 'weight') and module.weight is not None:
+                    signature.append((name.split('.')[-1], 'weight', tuple(module.weight.shape)))
+                if hasattr(module, 'bias') and module.bias is not None:
+                    signature.append((name.split('.')[-1], 'bias', tuple(module.bias.shape)))
+            layer_signatures[layer_num] = tuple(sorted(signature))
+        
+        # Group layers by signature
+        signature_to_layers = defaultdict(list)
+        for layer_num, signature in layer_signatures.items():
+            signature_to_layers[signature].append(layer_num)
+        
+        # Print information for each signature group
+        for signature, layer_nums in signature_to_layers.items():
+            first_layer = min(layer_nums)
+            print(f"\n--- Layer Group (showing layer {first_layer} as representative) ---")
+            if len(layer_nums) > 1:
+                print(f"  Identical layers: {sorted(layer_nums)}")
             
-            weight_shape = module.weight.shape if has_weight else None
-            bias_shape = module.bias.shape if has_bias else None
-            
-            print(f"\nModule: {name}")
-            print(f"  Type: {module.__class__.__name__}")
-            print(f"  Has weights: {has_weight}, Shape: {weight_shape}")
-            print(f"  Has bias: {has_bias}, Shape: {bias_shape}")
+            # Print details of the first layer in each group
+            for name, module in layer_modules[first_layer]:
+                has_weight = hasattr(module, 'weight') and module.weight is not None
+                has_bias = hasattr(module, 'bias') and module.bias is not None
+                
+                weight_shape = module.weight.shape if has_weight else None
+                bias_shape = module.bias.shape if has_bias else None
+                
+                print(f"\nModule: {name}")
+                print(f"  Type: {module.__class__.__name__}")
+                print(f"  Has weights: {has_weight}, Shape: {weight_shape}")
+                print(f"  Has bias: {has_bias}, Shape: {bias_shape}")
 
 def estimate_memory_requirements(model):
     """Estimate memory requirements for model loading and inference"""
