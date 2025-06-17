@@ -1,0 +1,47 @@
+{
+  "builder_name": "cmu-arctic-xvectors",
+  "citation": "",
+  "config_name": "default",
+  "dataset_name": "cmu-arctic-xvectors",
+  "dataset_size": 16544060,
+  "description": "",
+  "download_checksums": {
+    "https://huggingface.co/datasets/Matthijs/cmu-arctic-xvectors/resolve/main/spkrec-xvect.zip": {
+      "num_bytes": 17943510,
+      "checksum": null
+    }
+  },
+  "download_size": 17943510,
+  "features": {
+    "filename": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "xvector": {
+      "feature": {
+        "dtype": "float32",
+        "_type": "Value"
+      },
+      "length": 512,
+      "_type": "Sequence"
+    }
+  },
+  "homepage": "",
+  "license": "",
+  "size_in_bytes": 34487570,
+  "splits": {
+    "validation": {
+      "name": "validation",
+      "num_bytes": 16544060,
+      "num_examples": 7931,
+      "dataset_name": "cmu-arctic-xvectors"
+    }
+  },
+  "version": {
+    "version_str": "0.0.1",
+    "description": "",
+    "major": 0,
+    "minor": 0,
+    "patch": 1
+  }
+}
