@@ -173,7 +173,7 @@ def parse_cmd():
     args.add_argument('--top_k', type=int, default=None, dest='top_k', help='generation parameters')
     args.add_argument('--top_p', type=float, default=None, dest='top_p', help='generation parameters')
     args.add_argument('--typical_p', type=float, default=None, dest='typical_p', help='generation parameters')
-    args.add_argument('--max_new_tokens', type=int, default=128, dest='max_new_tokens', help='max_new_tokens')
+    args.add_argument('--max_new_tokens', type=int, default=32, dest='max_new_tokens', help='max_new_tokens')
     args.add_argument('--dump_file', type=str, default=None, dest='dump_file', help='dump_file')
     args.add_argument('--workload', type=str, default="tgi", dest='workload', help='Which workload? tgi or tei')
     args.add_argument('--task', type=str, default="text", dest='task', help='Which inference task? text or image')
